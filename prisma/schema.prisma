@@ -1,0 +1,157 @@
+// Canary data model. See data-and-screens.md for how the tables fit together.
+//
+// User references (createdById, uploadedById, acknowledgedById, resolvedById) are
+// plain strings until Better Auth's user table is added; relations come then.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// A recurring feed being monitored, e.g. "Weekly Claims".
+model Dataset {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  versions DatasetVersion[]
+  checks   Check[]
+  alerts   Alert[]
+}
+
+// One uploaded CSV. The file lives in Spaces at `fileKey`.
+model DatasetVersion {
+  id            String   @id @default(cuid())
+  datasetId     String
+  versionNumber Int
+  fileKey       String
+  fileName      String
+  sizeBytes     Int
+  contentHash   String // sha256 of the file contents
+  rowCount      Int? // set after profiling
+  profile       Json? // per-column summary, set after profiling
+  uploadedById  String
+  createdAt     DateTime @default(now())
+
+  dataset Dataset    @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  runs    CheckRun[]
+
+  @@unique([datasetId, versionNumber])
+  @@index([datasetId, createdAt])
+}
+
+enum CheckType {
+  REQUIRED_COLUMNS
+  ROW_COUNT
+  NULL_RATE
+  ALLOWED_VALUES
+  NUMERIC_RANGE
+  UNIQUE
+}
+
+enum Severity {
+  ERROR
+  WARN
+}
+
+// One rule for a dataset. `config` shape depends on `type` and is validated with Zod.
+model Check {
+  id        String    @id @default(cuid())
+  datasetId String
+  type      CheckType
+  column    String? // null for REQUIRED_COLUMNS and ROW_COUNT
+  config    Json
+  severity  Severity  @default(ERROR)
+  enabled   Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  dataset Dataset       @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  results CheckResult[]
+
+  @@index([datasetId])
+}
+
+enum RunStatus {
+  QUEUED
+  RUNNING
+  PASSED
+  WARNING
+  FAILED
+  ERROR
+}
+
+enum ResultStatus {
+  PASSED
+  FAILED
+  SKIPPED
+  ERROR
+}
+
+// One grading of a version against its dataset's enabled checks.
+model CheckRun {
+  id         String    @id @default(cuid())
+  versionId  String
+  status     RunStatus @default(QUEUED)
+  error      String? // set if the run itself crashed
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  version DatasetVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  results CheckResult[]
+  alert   Alert?
+
+  @@index([versionId, createdAt])
+}
+
+// The grade on one check within a run.
+model CheckResult {
+  id           String       @id @default(cuid())
+  runId        String
+  checkId      String
+  status       ResultStatus
+  message      String
+  actual       Json?
+  expected     Json?
+  failingCount Int?
+  sampleRows   Json? // up to 20 { rowNumber, values } objects
+  createdAt    DateTime     @default(now())
+
+  run   CheckRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  check Check    @relation(fields: [checkId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, checkId]) // the worker upserts, so retries don't duplicate
+}
+
+enum AlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+// Created when a run ends FAILED or ERROR. At most one per run.
+model Alert {
+  id               String      @id @default(cuid())
+  runId            String      @unique
+  datasetId        String
+  status           AlertStatus @default(OPEN)
+  acknowledgedById String?
+  acknowledgedAt   DateTime?
+  resolvedById     String?
+  resolvedAt       DateTime?
+  createdAt        DateTime    @default(now())
+
+  run     CheckRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  dataset Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([datasetId])
+}
