@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: canary-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: canary
+      POSTGRES_PASSWORD: canary
+      POSTGRES_DB: canary
+    ports:
+      # 5433 on the host so it doesn't clash with a locally installed Postgres on 5432
+      - "5433:5432"
+    volumes:
+      - canary-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U canary -d canary"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  canary-pgdata:
