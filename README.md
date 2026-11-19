@@ -24,3 +24,11 @@ npm run typecheck
 ```
 
 Postgres runs on port **5433** so it doesn't clash with a locally installed Postgres on 5432.
+
+### Cloud storage (DigitalOcean Spaces)
+
+Uploaded CSVs are stored in a Spaces bucket. Uploading and downloading need these values in `.env`; the rest of the app runs without them.
+
+1. In DigitalOcean, create a Spaces bucket in `tor1` with file listing kept **private**.
+2. Create an access key under Spaces Object Storage → Access Keys (read/write on that bucket).
+3. Fill in `SPACES_ENDPOINT`, `SPACES_REGION`, `SPACES_BUCKET`, `SPACES_KEY` (the `DO…` access key ID) and `SPACES_SECRET`.
