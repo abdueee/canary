@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireRole } from "@/lib/authz";
 import { db } from "@/lib/db";
+import { datasetPrefix, deletePrefix } from "@/lib/storage";
 
 // Returned to the form so it can show validation errors next to each field.
 export type DatasetFormState = {
@@ -73,8 +74,15 @@ export async function deleteDataset(id: string): Promise<void> {
   await requireRole("ADMIN");
 
   // Versions, checks, runs, results and alerts are removed by the schema's cascade deletes.
-  // TODO(feature 4): also delete this dataset's CSV files from Spaces.
-  await db.dataset.deleteMany({ where: { id } });
+  const { count } = await db.dataset.deleteMany({ where: { id } });
+
+  // Then remove its CSV files. Done after the database delete so no version is
+  // ever left pointing at a missing file; a failure here only leaves stray files.
+  if (count > 0) {
+    await deletePrefix(datasetPrefix(id)).catch((error) => {
+      console.error(`Failed to delete Spaces files for dataset ${id}`, error);
+    });
+  }
 
   revalidatePath("/");
   redirect("/");
