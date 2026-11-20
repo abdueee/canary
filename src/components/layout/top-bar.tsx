@@ -8,20 +8,26 @@ import { SignOutButton } from "./sign-out-button";
 
 type NavItem = { href: string; label: string; adminOnly?: boolean };
 
-const NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "Dashboard" },
-  // TODO(alerts): show the live open-alert count here once alerts + SSE land.
-  { href: "/alerts", label: "Alerts" },
-  { href: "/admin/users", label: "Users", adminOnly: true },
-];
-
 // Top bar on every signed-in page. The Users link is hidden from viewers, but
 // that's only a convenience: /admin/users checks the role on the server too.
-export function TopBar({ user }: { user: Pick<CurrentUser, "name" | "role"> }) {
+// openAlerts is counted on the server when the page renders.
+// TODO(alerts): keep it live over SSE.
+export function TopBar({
+  user,
+  openAlerts,
+}: {
+  user: Pick<CurrentUser, "name" | "role">;
+  openAlerts: number;
+}) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const items = NAV_ITEMS.filter((item) => !item.adminOnly || user.role === "admin");
+  const navItems: NavItem[] = [
+    { href: "/", label: "Dashboard" },
+    { href: "/alerts", label: `Alerts (${openAlerts})` },
+    { href: "/admin/users", label: "Users", adminOnly: true },
+  ];
+  const items = navItems.filter((item) => !item.adminOnly || user.role === "admin");
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
