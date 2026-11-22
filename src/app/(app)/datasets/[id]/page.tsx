@@ -27,7 +27,7 @@ export default async function DatasetPage({ params }: PageProps<"/datasets/[id]"
     notFound();
   }
 
-  const isAdmin = user.role === "ADMIN";
+  const isAdmin = user.role === "admin";
 
   return (
     <>

@@ -1,13 +1,13 @@
 import { createHash, randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
-import { requireUser } from "@/lib/authz";
+import { getCurrentUser } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { datasetPrefix, deleteObject, putObject } from "@/lib/storage";
 import { isCsvFileName, MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from "@/lib/uploads";
 
 // Upload a new CSV version of a dataset. Any signed-in user may upload.
-// Responds 201 { versionId, runId }, or { error } with 400 / 404 / 409 / 413.
+// Responds 201 { versionId, runId }, or { error } with 400 / 401 / 404 / 409 / 413.
 
 function fail(status: number, error: string) {
   return NextResponse.json({ error }, { status });
@@ -17,7 +17,11 @@ export async function POST(
   request: Request,
   { params }: RouteContext<"/api/datasets/[datasetId]/versions">,
 ) {
-  const user = await requireUser();
+  // Not requireUser(): a redirect to /login would look like a successful upload to fetch().
+  const user = await getCurrentUser();
+  if (!user) {
+    return fail(401, "Unauthorized");
+  }
   const { datasetId } = await params;
 
   const dataset = await db.dataset.findUnique({ where: { id: datasetId }, select: { id: true } });

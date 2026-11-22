@@ -4,7 +4,7 @@ import { requireRole } from "@/lib/authz";
 import { createDataset } from "@/server/actions/datasets";
 
 export default async function NewDatasetPage() {
-  await requireRole("ADMIN");
+  await requireRole("admin");
 
   return (
     <>
