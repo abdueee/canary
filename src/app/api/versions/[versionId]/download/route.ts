@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/authz";
+import { getCurrentUser } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { presignDownload } from "@/lib/storage";
 
@@ -9,7 +9,9 @@ export async function GET(
   _request: Request,
   { params }: RouteContext<"/api/versions/[versionId]/download">,
 ) {
-  await requireUser();
+  if (!(await getCurrentUser())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const { versionId } = await params;
 
   const version = await db.datasetVersion.findUnique({

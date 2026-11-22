@@ -13,7 +13,7 @@ export default async function DashboardPage() {
   return (
     <>
       <h1>Datasets</h1>
-      {user.role === "ADMIN" && <Link href="/datasets/new">New dataset</Link>}
+      {user.role === "admin" && <Link href="/datasets/new">New dataset</Link>}
 
       {datasets.length === 0 ? (
         <p>No datasets yet.</p>

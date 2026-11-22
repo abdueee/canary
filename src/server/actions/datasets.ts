@@ -33,7 +33,7 @@ export async function createDataset(
   _prevState: DatasetFormState,
   formData: FormData,
 ): Promise<DatasetFormState> {
-  const user = await requireRole("ADMIN");
+  const user = await requireRole("admin");
 
   const parsed = parseDatasetForm(formData);
   if (!parsed.success) {
@@ -53,7 +53,7 @@ export async function updateDataset(
   _prevState: DatasetFormState,
   formData: FormData,
 ): Promise<DatasetFormState> {
-  await requireRole("ADMIN");
+  await requireRole("admin");
 
   const parsed = parseDatasetForm(formData);
   if (!parsed.success) {
@@ -71,7 +71,7 @@ export async function updateDataset(
 }
 
 export async function deleteDataset(id: string): Promise<void> {
-  await requireRole("ADMIN");
+  await requireRole("admin");
 
   // Versions, checks, runs, results and alerts are removed by the schema's cascade deletes.
   const { count } = await db.dataset.deleteMany({ where: { id } });
