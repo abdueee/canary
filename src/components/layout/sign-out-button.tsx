@@ -1,18 +1,24 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 
 export function SignOutButton() {
-  const router = useRouter();
   const [pending, setPending] = useState(false);
 
   async function handleSignOut() {
     setPending(true);
-    await authClient.signOut(); // deletes the session row and clears the cookie
-    router.replace("/login");
-    router.refresh();
+    const { error } = await authClient.signOut(); // deletes the session row and clears the cookie
+    if (error) {
+      setPending(false);
+      return;
+    }
+    // Full page load, not router.replace(): with cacheComponents, Next.js keeps
+    // pages you navigate away from in memory with their state, so a client-side
+    // navigation brought this button back later still saying "Signing out..."
+    // (and the login form still saying "Signing in..."). A full load also drops
+    // every cached page from this user's session before someone else signs in.
+    window.location.replace("/login");
   }
 
   return (
