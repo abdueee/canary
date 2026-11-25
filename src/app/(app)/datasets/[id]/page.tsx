@@ -17,8 +17,9 @@ export default async function DatasetPage({ params }: PageProps<"/datasets/[id]"
       include: {
         versions: {
           orderBy: { versionNumber: "desc" },
-          include: { runs: { orderBy: { createdAt: "desc" }, take: 1, select: { status: true } } },
+          include: { runs: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true, status: true } } },
         },
+        _count: { select: { checks: { where: { enabled: true } } } },
       },
     }),
   ]);
@@ -28,6 +29,9 @@ export default async function DatasetPage({ params }: PageProps<"/datasets/[id]"
   }
 
   const isAdmin = user.role === "admin";
+  const latestVersion = dataset.versions[0];
+  const latestRun = latestVersion?.runs[0];
+  const runHref = (runId: string) => `/datasets/${dataset.id}/runs/${runId}`;
 
   return (
     <>
@@ -55,8 +59,21 @@ export default async function DatasetPage({ params }: PageProps<"/datasets/[id]"
       </section>
 
       <section>
+        <h2>Checks</h2>
+        <p>
+          {dataset._count.checks} enabled. <Link href={`/datasets/${dataset.id}/checks`}>View checks</Link>
+        </p>
+      </section>
+
+      <section>
         <h2>Latest run</h2>
-        <p>Coming with feature 6.</p>
+        {latestRun ? (
+          <p>
+            v{latestVersion.versionNumber}: {latestRun.status} (<Link href={runHref(latestRun.id)}>see results</Link>)
+          </p>
+        ) : (
+          <p>No runs yet.</p>
+        )}
       </section>
 
       <section>
@@ -87,7 +104,13 @@ export default async function DatasetPage({ params }: PageProps<"/datasets/[id]"
                   <td>{version.fileName}</td>
                   <td>{formatBytes(version.sizeBytes)}</td>
                   <td>{version.createdAt.toLocaleString("en-CA")}</td>
-                  <td>{version.runs[0]?.status ?? "—"}</td>
+                  <td>
+                    {version.runs[0] ? (
+                      <Link href={runHref(version.runs[0].id)}>{version.runs[0].status}</Link>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
                   <td>
                     {/* Plain <a>: this is an API route that redirects to Spaces, not a page. */}
                     <a href={`/api/versions/${version.id}/download`}>Download</a>
