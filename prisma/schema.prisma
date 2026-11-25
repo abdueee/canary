@@ -59,19 +59,14 @@ enum CheckType {
   UNIQUE
 }
 
-enum Severity {
-  ERROR
-  WARN
-}
-
 // One rule for a dataset. `config` shape depends on `type` and is validated with Zod.
+// Every check is equally important: any failure fails the run.
 model Check {
   id        String    @id @default(cuid())
   datasetId String
   type      CheckType
   column    String? // null for REQUIRED_COLUMNS and ROW_COUNT
   config    Json
-  severity  Severity  @default(ERROR)
   enabled   Boolean   @default(true)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -86,7 +81,6 @@ enum RunStatus {
   QUEUED
   RUNNING
   PASSED
-  WARNING
   FAILED
   ERROR
 }

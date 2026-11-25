@@ -21,10 +21,11 @@ export default async function DatasetPage({ params }: PageProps<"/datasets/[id]"
         versions: {
           orderBy: { versionNumber: "desc" },
           include: {
-            runs: { orderBy: { createdAt: "desc" }, take: 1, select: { status: true } },
+            runs: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true, status: true } },
             uploadedBy: { select: { name: true } },
           },
         },
+        _count: { select: { checks: { where: { enabled: true } } } },
       },
     }),
   ]);
@@ -34,6 +35,9 @@ export default async function DatasetPage({ params }: PageProps<"/datasets/[id]"
   }
 
   const isAdmin = user.role === "admin";
+  const latestVersion = dataset.versions[0];
+  const latestRun = latestVersion?.runs[0];
+  const runHref = (runId: string) => `/datasets/${dataset.id}/runs/${runId}`;
 
   // Versions table rows (newest first; the table re-sorts on click).
   const versionRows: VersionRow[] = dataset.versions.map((version) => ({
@@ -45,6 +49,7 @@ export default async function DatasetPage({ params }: PageProps<"/datasets/[id]"
     uploadedAt: version.createdAt.toISOString(),
     uploadedBy: version.uploadedBy.name,
     runStatus: version.runs[0]?.status ?? null,
+    runHref: version.runs[0] ? runHref(version.runs[0].id) : null,
   }));
 
   // Trend points: profiled versions only, oldest first. The profile JSON is
@@ -88,8 +93,21 @@ export default async function DatasetPage({ params }: PageProps<"/datasets/[id]"
       </section>
 
       <section>
+        <h2>Checks</h2>
+        <p>
+          {dataset._count.checks} enabled. <Link href={`/datasets/${dataset.id}/checks`}>View checks</Link>
+        </p>
+      </section>
+
+      <section>
         <h2>Latest run</h2>
-        <p>Coming with feature 6.</p>
+        {latestRun ? (
+          <p>
+            v{latestVersion.versionNumber}: {latestRun.status} (<Link href={runHref(latestRun.id)}>see results</Link>)
+          </p>
+        ) : (
+          <p>No runs yet.</p>
+        )}
       </section>
 
       <section className="flex flex-col gap-3">

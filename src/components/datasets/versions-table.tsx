@@ -9,6 +9,7 @@ import {
   useTable,
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import Link from "next/link";
 import { RunStatusBadge } from "@/components/status-badges";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +28,7 @@ export type VersionRow = {
   uploadedAt: string;
   uploadedBy: string;
   runStatus: RunStatus | null;
+  runHref: string | null;
 };
 
 // Features and columns live at module scope so they are stable across renders
@@ -77,7 +79,7 @@ const columns = column.columns([
   column.accessor("runStatus", {
     header: "Run",
     enableSorting: false,
-    cell: (info) => <RunStatusBadge status={info.getValue()} />,
+    cell: (info) => <RunStatusLink status={info.getValue()} href={info.row.original.runHref} />,
   }),
   column.display({
     id: "download",
@@ -159,7 +161,7 @@ export function VersionsTable({ versions }: { versions: VersionRow[] }) {
               <CardContent className="flex flex-col gap-2 text-sm">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium">v{version.versionNumber}</span>
-                  <RunStatusBadge status={version.runStatus} />
+                  <RunStatusLink status={version.runStatus} href={version.runHref} />
                 </div>
                 <p className="truncate" title={version.fileName}>
                   {version.fileName}
@@ -178,6 +180,18 @@ export function VersionsTable({ versions }: { versions: VersionRow[] }) {
         ))}
       </ul>
     </>
+  );
+}
+
+// Links the status badge to the run's results page when the version has a run.
+function RunStatusLink({ status, href }: { status: RunStatus | null; href: string | null }) {
+  const badge = <RunStatusBadge status={status} />;
+  return href ? (
+    <Link href={href} title="See run results">
+      {badge}
+    </Link>
+  ) : (
+    badge
   );
 }
 

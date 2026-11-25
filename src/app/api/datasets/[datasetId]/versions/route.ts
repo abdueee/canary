@@ -1,7 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { getCurrentUser } from "@/lib/authz";
+import { runInBackground } from "@/lib/checks/run";
 import { db } from "@/lib/db";
 import { datasetPrefix, deleteObject, putObject } from "@/lib/storage";
 import { isCsvFileName, MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from "@/lib/uploads";
@@ -83,7 +84,9 @@ export async function POST(
       contentHash,
       uploadedById: user.id,
     });
-    // TODO(feature 7): enqueue the run-checks job for version.runId here.
+    // The checks run in this server process once the response has been sent,
+    // so the upload returns straight away and the run page shows progress.
+    after(() => runInBackground(version.runId));
     return NextResponse.json(version, { status: 201 });
   } catch (error) {
     await deleteObject(fileKey).catch((cleanupError) => {

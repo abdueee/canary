@@ -1,6 +1,6 @@
 // Seed script, run with `npm run db:seed` (and automatically by `prisma migrate reset`).
 //
-// Promotes the account with SEED_ADMIN_EMAIL to admin. Everyone registers as a
+// Promotes the account(s) in SEED_ADMIN_EMAIL (comma-separated) to admin. Everyone registers as a
 // viewer, so this is how the very first admin is created:
 //   1. register that email at /register
 //   2. npm run db:seed
@@ -15,13 +15,23 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
 });
 
-async function promoteSeedAdmin() {
-  const email = process.env.SEED_ADMIN_EMAIL?.trim();
-  if (!email) {
+async function promoteSeedAdmins() {
+  // One email, or several separated by commas.
+  const emails = (process.env.SEED_ADMIN_EMAIL ?? "")
+    .split(",")
+    .map((email) => email.trim())
+    .filter(Boolean);
+  if (emails.length === 0) {
     console.log("SEED_ADMIN_EMAIL is not set; no admin promoted.");
     return;
   }
 
+  for (const email of emails) {
+    await promoteSeedAdmin(email);
+  }
+}
+
+async function promoteSeedAdmin(email: string) {
   const user = await prisma.user.findFirst({
     where: { email: { equals: email, mode: "insensitive" } },
   });
@@ -42,7 +52,7 @@ async function promoteSeedAdmin() {
 }
 
 async function main() {
-  await promoteSeedAdmin();
+  await promoteSeedAdmins();
 }
 
 main()

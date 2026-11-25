@@ -24,7 +24,7 @@ sessions and password hashes are stored in Postgres (`user`, `session`, `account
    ```bash
    node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
    ```
-   and set `SEED_ADMIN_EMAIL` to the email you'll register with.
+   and set `SEED_ADMIN_EMAIL` to the email you'll register with (separate several with commas).
 2. Start the app and register that email at http://localhost:3000/register.
    Everyone who registers starts as a **viewer**.
 3. Promote it to admin:
@@ -50,6 +50,9 @@ npm run db:studio   # browse the database in the browser
 npm run db:seed     # promote SEED_ADMIN_EMAIL to admin
 npm run lint
 npm run typecheck
+npm test                                   # unit tests
+npm run profile:csv -- path/to/file.csv    # show how Canary reads and profiles a CSV
+npm run demo:checks                        # run the check engine end to end on a throwaway dataset
 ```
 
 Postgres runs on port **5433** so it doesn't clash with a locally installed Postgres on 5432.
