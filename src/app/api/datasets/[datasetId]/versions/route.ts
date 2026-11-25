@@ -1,7 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { getCurrentUser } from "@/lib/authz";
+import { executeRun, failRun } from "@/lib/checks/run";
 import { db } from "@/lib/db";
 import { datasetPrefix, deleteObject, putObject } from "@/lib/storage";
 import { isCsvFileName, MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from "@/lib/uploads";
@@ -83,13 +84,28 @@ export async function POST(
       contentHash,
       uploadedById: user.id,
     });
-    // TODO(feature 7): enqueue the run-checks job for version.runId here.
+    // TODO(feature 7): replace with enqueueing the run-checks job on the worker.
+    // For now the checks run in this server process once the response is sent.
+    after(() => runChecksInBackground(version.runId));
     return NextResponse.json(version, { status: 201 });
   } catch (error) {
     await deleteObject(fileKey).catch((cleanupError) => {
       console.error(`Failed to remove orphaned upload ${fileKey}`, cleanupError);
     });
     throw error;
+  }
+}
+
+// Stand-in for the worker until feature 7: no retries, so any unexpected error
+// (Spaces or the database being unavailable) ends the run as ERROR.
+async function runChecksInBackground(runId: string) {
+  try {
+    await executeRun(runId);
+  } catch (error) {
+    console.error(`Check run ${runId} failed`, error);
+    await failRun(runId, "Something went wrong while running the checks.").catch((failError) => {
+      console.error(`Could not mark run ${runId} as failed`, failError);
+    });
   }
 }
 

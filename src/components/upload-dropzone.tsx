@@ -41,8 +41,8 @@ export function UploadDropzone({ datasetId }: { datasetId: string }) {
         return;
       }
       setStatus({ kind: "done", message: `Uploaded ${file.name}` });
-      // TODO(feature 9): go to the new run's page instead.
-      router.refresh();
+      const { runId } = (await response.json()) as { versionId: string; runId: string };
+      router.push(`/datasets/${datasetId}/runs/${runId}`);
     } catch {
       setStatus({ kind: "error", message: "Upload failed. Check your connection and try again." });
     } finally {
