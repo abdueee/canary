@@ -20,8 +20,6 @@ export function healthFromRun(latestRunStatus: RunStatus | undefined): Health {
   switch (latestRunStatus) {
     case "PASSED":
       return "healthy";
-    case "WARNING":
-      return "warning";
     case "FAILED":
     case "ERROR":
       return "failing";
@@ -37,7 +35,6 @@ export const RUN_STATUS_LABELS: Record<RunStatus, string> = {
   QUEUED: "Queued",
   RUNNING: "Running",
   PASSED: "Passed",
-  WARNING: "Warning",
   FAILED: "Failed",
   ERROR: "Error",
 };

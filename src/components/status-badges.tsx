@@ -1,4 +1,4 @@
-import type { AlertStatus, RunStatus } from "@/generated/prisma/client";
+import type { AlertStatus, ResultStatus, RunStatus } from "@/generated/prisma/client";
 import { Badge } from "@/components/ui/badge";
 import {
   ALERT_STATUS_LABELS,
@@ -46,4 +46,27 @@ const ALERT_TONE: Record<AlertStatus, keyof typeof TONE> = {
 
 export function AlertStatusBadge({ status }: { status: AlertStatus }) {
   return <Badge className={TONE[ALERT_TONE[status]]}>{ALERT_STATUS_LABELS[status]}</Badge>;
+}
+
+// One check's result within a run.
+const RESULT_TONE: Record<ResultStatus, keyof typeof TONE> = {
+  PASSED: "green",
+  FAILED: "red",
+  SKIPPED: "grey",
+  ERROR: "red",
+};
+
+const RESULT_LABELS: Record<ResultStatus, string> = {
+  PASSED: "Passed",
+  FAILED: "Failed",
+  SKIPPED: "Skipped",
+  ERROR: "Error",
+};
+
+export function ResultStatusBadge({ status }: { status: ResultStatus }) {
+  return <Badge className={TONE[RESULT_TONE[status]]}>{RESULT_LABELS[status]}</Badge>;
+}
+
+export function EnabledBadge({ enabled }: { enabled: boolean }) {
+  return <Badge className={TONE[enabled ? "green" : "grey"]}>{enabled ? "Enabled" : "Disabled"}</Badge>;
 }

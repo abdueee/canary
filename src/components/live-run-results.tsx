@@ -1,13 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ResultStatusBadge, RunStatusBadge } from "@/components/status-badges";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { checkTypeLabel } from "@/lib/check-labels";
 import type { RunStatus } from "@/generated/prisma/enums";
 import { FINISHED_RUN_STATUSES, type LiveResult, type RunSnapshot } from "@/lib/run-stream";
 
 // Shows a run's results as they arrive over SSE, while the run is in progress.
 // When the run finishes it refreshes the page, which then shows the full
-// results with details. Barebones; styled in feature 9.
+// results with details.
 export function LiveRunResults({ runId, initialStatus }: { runId: string; initialStatus: RunStatus }) {
   const router = useRouter();
   const [status, setStatus] = useState<RunStatus>(initialStatus);
@@ -45,35 +49,32 @@ export function LiveRunResults({ runId, initialStatus }: { runId: string; initia
   }, [runId, router]);
 
   return (
-    <section aria-live="polite">
-      <p>Status: {status} (updating live)</p>
-      {results.length === 0 ? (
-        <p>{status === "QUEUED" ? "Waiting to start…" : "Reading the file…"}</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Check</th>
-              <th>Status</th>
-              <th>Result</th>
-              <th>Failing rows</th>
-            </tr>
-          </thead>
-          <tbody>
+    <Card aria-live="polite">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <LoaderCircle aria-hidden className="size-4 animate-spin text-muted-foreground" />
+          Checking… <RunStatusBadge status={status} />
+        </CardTitle>
+        <CardDescription>Results appear here as each check finishes.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {results.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{status === "QUEUED" ? "Waiting to start…" : "Reading the file…"}</p>
+        ) : (
+          <ul className="divide-y rounded-lg border">
             {results.map((result) => (
-              <tr key={result.checkId}>
-                <td>
-                  {result.checkType}
-                  {result.column && ` (${result.column})`}
-                </td>
-                <td>{result.status}</td>
-                <td>{result.message}</td>
-                <td>{result.failingCount?.toLocaleString("en-CA") ?? "—"}</td>
-              </tr>
+              <li key={result.checkId} className="flex flex-col gap-1 p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <ResultStatusBadge status={result.status} />
+                  <span className="font-medium">{checkTypeLabel(result.checkType)}</span>
+                  {result.column && <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{result.column}</code>}
+                </div>
+                <p className="text-sm">{result.message}</p>
+              </li>
             ))}
-          </tbody>
-        </table>
-      )}
-    </section>
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
 }
