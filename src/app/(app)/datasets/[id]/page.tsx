@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DatasetForm } from "@/components/dataset-form";
+import { TrendCharts, type TrendPoint } from "@/components/datasets/trend-charts";
+import { VersionsTable, type VersionRow } from "@/components/datasets/versions-table";
 import { DeleteDatasetButton } from "@/components/delete-dataset-button";
 import { UploadDropzone } from "@/components/upload-dropzone";
 import { requireUser } from "@/lib/authz";
+import { profileSchema } from "@/lib/checks/schemas";
 import { db } from "@/lib/db";
 import { deleteDataset, updateDataset } from "@/server/actions/datasets";
 
@@ -17,7 +20,10 @@ export default async function DatasetPage({ params }: PageProps<"/datasets/[id]"
       include: {
         versions: {
           orderBy: { versionNumber: "desc" },
-          include: { runs: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true, status: true } } },
+          include: {
+            runs: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true, status: true } },
+            uploadedBy: { select: { name: true } },
+          },
         },
         _count: { select: { checks: { where: { enabled: true } } } },
       },
@@ -32,6 +38,34 @@ export default async function DatasetPage({ params }: PageProps<"/datasets/[id]"
   const latestVersion = dataset.versions[0];
   const latestRun = latestVersion?.runs[0];
   const runHref = (runId: string) => `/datasets/${dataset.id}/runs/${runId}`;
+
+  // Versions table rows (newest first; the table re-sorts on click).
+  const versionRows: VersionRow[] = dataset.versions.map((version) => ({
+    id: version.id,
+    versionNumber: version.versionNumber,
+    fileName: version.fileName,
+    sizeBytes: version.sizeBytes,
+    rowCount: version.rowCount,
+    uploadedAt: version.createdAt.toISOString(),
+    uploadedBy: version.uploadedBy.name,
+    runStatus: version.runs[0]?.status ?? null,
+    runHref: version.runs[0] ? runHref(version.runs[0].id) : null,
+  }));
+
+  // Trend points: profiled versions only, oldest first. The profile JSON is
+  // validated with the shared schema; anything that doesn't parse is skipped.
+  const trendPoints: TrendPoint[] = [...dataset.versions].reverse().flatMap((version) => {
+    const profile = profileSchema.safeParse(version.profile);
+    if (!profile.success) return [];
+    return [
+      {
+        label: `v${version.versionNumber}`,
+        rowCount: profile.data.rowCount,
+        runStatus: version.runs[0]?.status ?? null,
+        nullPct: Object.fromEntries(profile.data.columns.map((c) => [c.name, c.nullPct])),
+      },
+    ];
+  });
 
   return (
     <>
@@ -76,57 +110,19 @@ export default async function DatasetPage({ params }: PageProps<"/datasets/[id]"
         )}
       </section>
 
-      <section>
-        <h2>Trends</h2>
-        <p>Coming with feature 11.</p>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold">Trends</h2>
+        <TrendCharts points={trendPoints} />
       </section>
 
-      <section>
-        <h2>Versions</h2>
-        {dataset.versions.length === 0 ? (
-          <p>No versions yet. Upload a CSV to create the first one.</p>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold">Versions</h2>
+        {versionRows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No versions yet. Upload a CSV to create the first one.</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Version</th>
-                <th>File</th>
-                <th>Size</th>
-                <th>Uploaded</th>
-                <th>Run status</th>
-                <th>Download</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dataset.versions.map((version) => (
-                <tr key={version.id}>
-                  <td>v{version.versionNumber}</td>
-                  <td>{version.fileName}</td>
-                  <td>{formatBytes(version.sizeBytes)}</td>
-                  <td>{version.createdAt.toLocaleString("en-CA")}</td>
-                  <td>
-                    {version.runs[0] ? (
-                      <Link href={runHref(version.runs[0].id)}>{version.runs[0].status}</Link>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td>
-                    {/* Plain <a>: this is an API route that redirects to Spaces, not a page. */}
-                    <a href={`/api/versions/${version.id}/download`}>Download</a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <VersionsTable versions={versionRows} />
         )}
       </section>
     </>
   );
-}
-
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { Field } from "./login-form";
@@ -9,7 +8,6 @@ import { Field } from "./login-form";
 const MIN_PASSWORD_LENGTH = 8; // matches minPasswordLength in src/lib/auth.ts
 
 export function RegisterForm() {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -43,8 +41,8 @@ export function RegisterForm() {
       return;
     }
 
-    router.replace("/");
-    router.refresh();
+    // Full page load so the app starts fresh with the new session.
+    window.location.replace("/");
   }
 
   return (
