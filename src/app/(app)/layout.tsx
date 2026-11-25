@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { TopBar } from "@/components/layout/top-bar";
+import { LiveUpdates } from "@/components/live-updates";
 import { requireUser } from "@/lib/authz";
 import { db } from "@/lib/db";
 
@@ -24,6 +25,7 @@ async function AuthenticatedShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <TopBar user={user} openAlerts={openAlerts} />
+      <LiveUpdates />
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 p-4 sm:p-6">
         {children}
       </main>

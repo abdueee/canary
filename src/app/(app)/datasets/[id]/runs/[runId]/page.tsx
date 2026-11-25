@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AutoRefresh } from "@/components/auto-refresh";
+import { LiveRunResults } from "@/components/live-run-results";
 import { requireUser } from "@/lib/authz";
 import { profileSchema, sampleRowsSchema } from "@/lib/checks/schemas";
 import { db } from "@/lib/db";
 
-// One run's results. Barebones: a results table with expandable details.
-// Live updates (feature 8) and the styled drill-down (feature 9) come later.
+// One run's results. While the run is in progress, results stream in live
+// (LiveRunResults); once it's finished, the full table with details is shown.
+// Barebones; the styled drill-down comes with feature 9.
 export default async function RunPage({ params }: PageProps<"/datasets/[id]/runs/[runId]">) {
   const { id, runId } = await params;
   const [, run] = await Promise.all([
@@ -50,7 +51,8 @@ export default async function RunPage({ params }: PageProps<"/datasets/[id]/runs
         {version.versionNumber}
       </p>
       <h1>
-        Run for v{version.versionNumber}: {run.status}
+        Run for v{version.versionNumber}
+        {!inProgress && `: ${run.status}`}
       </h1>
       <p>
         File: {version.fileName} (<a href={`/api/versions/${version.id}/download`}>download</a>)
@@ -63,12 +65,7 @@ export default async function RunPage({ params }: PageProps<"/datasets/[id]/runs
       </p>
       {run.error && <p role="alert">{run.error}</p>}
 
-      {inProgress && (
-        <>
-          <p>Checking the file… this page refreshes on its own.</p>
-          <AutoRefresh />
-        </>
-      )}
+      {inProgress && <LiveRunResults runId={run.id} initialStatus={run.status} />}
 
       {!inProgress && run.results.length === 0 && !run.error && (
         <p>
@@ -76,7 +73,7 @@ export default async function RunPage({ params }: PageProps<"/datasets/[id]/runs
         </p>
       )}
 
-      {run.results.length > 0 && (
+      {!inProgress && run.results.length > 0 && (
         <table>
           <thead>
             <tr>

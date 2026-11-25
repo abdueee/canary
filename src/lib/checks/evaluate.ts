@@ -12,30 +12,33 @@ export type StoredCheck = { id: string; type: CheckType; column: string | null; 
 export type CheckResultOutcome = Omit<CheckOutcome, "status"> & { checkId: string; status: ResultStatus };
 
 /**
- * Evaluates every check. A check whose settings are invalid, or that throws,
- * gets an ERROR result instead of stopping the others.
+ * Evaluates one check. A check whose settings are invalid, or that throws,
+ * gets an ERROR result instead of throwing, so the other checks still run.
  */
-export function evaluateChecks(checks: StoredCheck[], context: CheckContext): CheckResultOutcome[] {
-  return checks.map((check) => {
-    const parsed = checkDefinitionSchema.safeParse({ type: check.type, column: check.column, config: check.config });
-    if (!parsed.success) {
-      return {
-        checkId: check.id,
-        status: "ERROR",
-        message: `This check's settings are invalid, so it couldn't run. ${z.prettifyError(parsed.error)}`,
-      };
-    }
+export function evaluateStoredCheck(check: StoredCheck, context: CheckContext): CheckResultOutcome {
+  const parsed = checkDefinitionSchema.safeParse({ type: check.type, column: check.column, config: check.config });
+  if (!parsed.success) {
+    return {
+      checkId: check.id,
+      status: "ERROR",
+      message: `This check's settings are invalid, so it couldn't run. ${z.prettifyError(parsed.error)}`,
+    };
+  }
 
-    try {
-      return { checkId: check.id, ...evaluateCheck(parsed.data, context) };
-    } catch (error) {
-      return {
-        checkId: check.id,
-        status: "ERROR",
-        message: `This check couldn't run: ${error instanceof Error ? error.message : String(error)}`,
-      };
-    }
-  });
+  try {
+    return { checkId: check.id, ...evaluateCheck(parsed.data, context) };
+  } catch (error) {
+    return {
+      checkId: check.id,
+      status: "ERROR",
+      message: `This check couldn't run: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
+}
+
+/** Evaluates every check, in order. */
+export function evaluateChecks(checks: StoredCheck[], context: CheckContext): CheckResultOutcome[] {
+  return checks.map((check) => evaluateStoredCheck(check, context));
 }
 
 export type FinishedRunStatus = "PASSED" | "FAILED" | "ERROR";
