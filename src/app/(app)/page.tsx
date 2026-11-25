@@ -135,7 +135,6 @@ type DashboardDataset = {
 
 const HEALTH_BORDER: Record<Health, string> = {
   healthy: "border-l-emerald-500",
-  warning: "border-l-amber-500",
   failing: "border-l-red-500",
   checking: "border-l-sky-500",
   none: "border-l-border",

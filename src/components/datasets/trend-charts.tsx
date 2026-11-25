@@ -27,9 +27,8 @@ export type TrendPoint = {
   nullPct: Record<string, number>;
 };
 
-const BAR_COLOUR: Record<"ok" | "warn" | "bad" | "other", string> = {
+const BAR_COLOUR: Record<"ok" | "bad" | "other", string> = {
   ok: "#10b981",
-  warn: "#f59e0b",
   bad: "#ef4444",
   other: "#94a3b8",
 };
@@ -38,7 +37,6 @@ const LINE_COLOURS = ["#2563eb", "#db2777", "#16a34a", "#ea580c", "#7c3aed", "#0
 
 function barColour(status: RunStatus | null) {
   if (status === "PASSED") return BAR_COLOUR.ok;
-  if (status === "WARNING") return BAR_COLOUR.warn;
   if (status === "FAILED" || status === "ERROR") return BAR_COLOUR.bad;
   return BAR_COLOUR.other;
 }

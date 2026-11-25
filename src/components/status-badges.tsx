@@ -8,7 +8,7 @@ import {
   healthFromRun,
 } from "@/lib/health";
 
-// One colour language across the app: green = healthy/passed, amber = warning,
+// One colour language across the app: green = healthy/passed, amber = acknowledged,
 // red = failing, blue = in progress, grey = nothing yet. Every badge also shows
 // a word, so colour is never the only signal.
 const TONE = {
@@ -21,7 +21,6 @@ const TONE = {
 
 const HEALTH_TONE: Record<Health, keyof typeof TONE> = {
   healthy: "green",
-  warning: "amber",
   failing: "red",
   checking: "blue",
   none: "grey",

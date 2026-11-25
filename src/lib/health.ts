@@ -2,14 +2,13 @@ import type { AlertStatus, RunStatus } from "@/generated/prisma/client";
 
 // Dataset health is never stored (see data-and-screens.md): it is derived from
 // the status of the latest version's latest check run.
-export type Health = "healthy" | "warning" | "failing" | "checking" | "none";
+export type Health = "healthy" | "failing" | "checking" | "none";
 
-export const HEALTH_FILTERS = ["all", "failing", "warning", "healthy", "checking", "none"] as const;
+export const HEALTH_FILTERS = ["all", "failing", "healthy", "checking", "none"] as const;
 export type HealthFilter = (typeof HEALTH_FILTERS)[number];
 
 export const HEALTH_LABELS: Record<Health, string> = {
   healthy: "Healthy",
-  warning: "Warning",
   failing: "Failing",
   checking: "Checking",
   none: "No uploads",
@@ -20,8 +19,6 @@ export function healthFromRun(latestRunStatus: RunStatus | undefined): Health {
   switch (latestRunStatus) {
     case "PASSED":
       return "healthy";
-    case "WARNING":
-      return "warning";
     case "FAILED":
     case "ERROR":
       return "failing";
@@ -37,7 +34,6 @@ export const RUN_STATUS_LABELS: Record<RunStatus, string> = {
   QUEUED: "Queued",
   RUNNING: "Running",
   PASSED: "Passed",
-  WARNING: "Warning",
   FAILED: "Failed",
   ERROR: "Error",
 };
