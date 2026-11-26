@@ -1,5 +1,7 @@
 "use client";
 
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+
 type Props = {
   action: () => Promise<void>;
 };
@@ -7,17 +9,11 @@ type Props = {
 // Asks for confirmation before deleting, since this removes all of the dataset's history.
 export function DeleteDatasetButton({ action }: Props) {
   return (
-    <form
+    <ConfirmSubmitButton
       action={action}
-      onSubmit={(event) => {
-        if (!confirm("Delete this dataset and all of its versions, runs and alerts?")) {
-          event.preventDefault();
-        }
-      }}
+      confirmMessage="Delete this dataset and all of its versions, runs and alerts?"
     >
-      <button type="submit" className="border px-3 py-1">
-        Delete dataset
-      </button>
-    </form>
+      Delete dataset
+    </ConfirmSubmitButton>
   );
 }

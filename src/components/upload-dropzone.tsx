@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { cn } from "cn";
+import { Button } from "@/components/ui/button";
 import { isCsvFileName, MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from "@/lib/uploads";
 
 type Status =
@@ -10,8 +12,8 @@ type Status =
   | { kind: "error"; message: string }
   | { kind: "done"; message: string };
 
-// Drag-and-drop (or pick) a CSV to upload a new version. Functional only;
-// styling comes with the UI pass.
+// Drag-and-drop (or pick) a CSV to upload a new version. The native file input
+// is visually hidden; the "Choose file" button opens it.
 export function UploadDropzone({ datasetId }: { datasetId: string }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -58,9 +60,12 @@ export function UploadDropzone({ datasetId }: { datasetId: string }) {
     <div
       onDragOver={(event) => {
         event.preventDefault();
-        setDragging(true);
+        if (!uploading) setDragging(true);
       }}
-      onDragLeave={() => setDragging(false)}
+      onDragLeave={(event) => {
+        // Ignore drag-leave events fired when moving over child elements.
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false);
+      }}
       onDrop={(event) => {
         event.preventDefault();
         setDragging(false);
@@ -69,14 +74,27 @@ export function UploadDropzone({ datasetId }: { datasetId: string }) {
           upload(file);
         }
       }}
-      className="flex flex-col gap-2 border border-dashed p-6"
+      className={cn(
+        "flex flex-col items-center gap-3 rounded-lg border border-dashed px-4 py-6 text-center transition-colors",
+        dragging ? "border-primary bg-muted/50" : "border-border",
+      )}
     >
-      <p>{dragging ? "Drop to upload" : `Drag a CSV here (max ${MAX_UPLOAD_LABEL}), or choose a file:`}</p>
+      <p className="text-sm text-muted-foreground">
+        {uploading
+          ? `Uploading ${status.fileName}…`
+          : dragging
+            ? "Drop to upload"
+            : `Drag a CSV here or choose a file (max ${MAX_UPLOAD_LABEL})`}
+      </p>
+
       <input
         ref={inputRef}
         type="file"
         accept=".csv,text/csv"
         disabled={uploading}
+        tabIndex={-1}
+        aria-hidden
+        className="sr-only"
         onChange={(event) => {
           const file = event.target.files?.[0];
           if (file) {
@@ -84,10 +102,13 @@ export function UploadDropzone({ datasetId }: { datasetId: string }) {
           }
         }}
       />
-      <p aria-live="polite">
-        {status.kind === "uploading" && `Uploading ${status.fileName}…`}
-        {status.kind === "error" && status.message}
-        {status.kind === "done" && status.message}
+      <Button type="button" variant="outline" disabled={uploading} onClick={() => inputRef.current?.click()}>
+        {uploading ? "Uploading…" : "Choose file"}
+      </Button>
+
+      <p aria-live="polite" className="text-sm empty:hidden">
+        {status.kind === "error" && <span className="text-destructive">{status.message}</span>}
+        {status.kind === "done" && <span className="text-emerald-700 dark:text-emerald-400">{status.message}</span>}
       </p>
     </div>
   );

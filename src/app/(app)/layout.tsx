@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
 // parentheses doesn't appear in the URL: (app)/page.tsx is "/".
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
-    // The session and the alert count are read per request, so they live inside
+    // The session and the open alerts are read per request, so they live inside
     // Suspense (required by Cache Components). The fallback is a plain top-bar strip.
     <Suspense fallback={<div className="h-14 border-b border-zinc-200 bg-white" />}>
       <AuthenticatedShell>{children}</AuthenticatedShell>
@@ -19,12 +19,19 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
 async function AuthenticatedShell({ children }: { children: React.ReactNode }) {
   const [user, openAlerts] = await Promise.all([
     requireUser(), // redirects to /login if not signed in
-    db.alert.count({ where: { status: "OPEN" } }),
+    // Open alerts, newest first. The top bar compares their times with when this
+    // browser last opened the Alerts tab to show how many are new.
+    db.alert.findMany({
+      where: { status: "OPEN" },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      select: { createdAt: true },
+    }),
   ]);
 
   return (
     <>
-      <TopBar user={user} openAlerts={openAlerts} />
+      <TopBar user={user} openAlertTimes={openAlerts.map((a) => a.createdAt.getTime())} />
       <LiveUpdates />
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 p-4 sm:p-6">
         {children}
