@@ -20,7 +20,7 @@ export function DatasetForm({ action, submitLabel, defaultValues, secondaryActio
   const [state, formAction, pending] = useActionState(action, {});
 
   return (
-    <form action={formAction} className="flex flex-col gap-5">
+    <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <Label htmlFor="dataset-name">Name</Label>
         <Input
@@ -28,7 +28,6 @@ export function DatasetForm({ action, submitLabel, defaultValues, secondaryActio
           name="name"
           required
           maxLength={100}
-          placeholder="e.g. Daily Payments"
           defaultValue={defaultValues?.name}
           aria-invalid={state.errors?.name ? true : undefined}
         />
@@ -48,7 +47,6 @@ export function DatasetForm({ action, submitLabel, defaultValues, secondaryActio
           name="description"
           maxLength={500}
           rows={3}
-          placeholder="What is this file, where does it come from and who relies on it?"
           defaultValue={defaultValues?.description ?? ""}
           aria-invalid={state.errors?.description ? true : undefined}
         />

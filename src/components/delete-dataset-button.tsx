@@ -1,6 +1,5 @@
 "use client";
 
-import { Trash } from "lucide-react";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 
 type Props = {
@@ -14,7 +13,6 @@ export function DeleteDatasetButton({ action }: Props) {
       action={action}
       confirmMessage="Delete this dataset and all of its versions, runs and alerts?"
     >
-      <Trash aria-hidden />
       Delete dataset
     </ConfirmSubmitButton>
   );

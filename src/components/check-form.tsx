@@ -1,13 +1,13 @@
 "use client";
 
-import { Asterisk, Columns3, ListChecks, Percent, Plus, Ruler, Rows3, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useActionState, useMemo, useState } from "react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
-import { CHECK_TYPE_INFO, CHECK_TYPES, type CheckType, describeDefinition } from "@/lib/check-labels";
+import { CHECK_TYPE_INFO, CHECK_TYPES, type CheckType } from "@/lib/check-labels";
 import {
   checkDefinitionSchema,
   DEFAULT_ROW_COUNT_LOOKBACK,
@@ -26,15 +26,6 @@ type Props = {
   columns: ColumnProfile[];
   /** Row count of that version. */
   rowCount: number | null;
-};
-
-const TYPE_ICONS: Record<CheckType, typeof Columns3> = {
-  REQUIRED_COLUMNS: Columns3,
-  ROW_COUNT: Rows3,
-  NULL_RATE: Percent,
-  ALLOWED_VALUES: ListChecks,
-  NUMERIC_RANGE: Ruler,
-  UNIQUE: Asterisk,
 };
 
 type RequiredRow = { name: string; type: InferredType | ""; include: boolean };
@@ -145,56 +136,26 @@ export function CheckForm({ action, columns, rowCount }: Props) {
           setShowErrors(true);
         }
       }}
-      className="flex flex-col gap-6"
+      className="flex flex-col gap-5"
     >
       {/* What the server action reads. */}
       <input type="hidden" name="type" value={type} />
       <input type="hidden" name="column" value={isColumnCheck ? column : ""} />
       <input type="hidden" name="config" value={JSON.stringify(config)} />
 
-      <fieldset className="flex flex-col gap-3">
-        <legend className="mb-3 text-sm font-medium">1. What should be checked?</legend>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {CHECK_TYPES.map((t) => {
-            const Icon = TYPE_ICONS[t];
-            const info = CHECK_TYPE_INFO[t];
-            const active = t === type;
-            return (
-              <label
-                key={t}
-                className={cn(
-                  "flex cursor-pointer gap-3 rounded-lg border p-3 transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
-                  active ? "border-primary bg-primary/5" : "hover:border-ring/60 hover:bg-muted/50",
-                )}
-              >
-                <input
-                  type="radio"
-                  name="check-type-picker"
-                  value={t}
-                  checked={active}
-                  onChange={() => chooseType(t)}
-                  className="sr-only"
-                />
-                <span
-                  className={cn(
-                    "flex size-8 shrink-0 items-center justify-center rounded-md",
-                    active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-                  )}
-                >
-                  <Icon aria-hidden className="size-4" />
-                </span>
-                <span className="flex flex-col gap-0.5">
-                  <span className="text-sm font-medium">{info.label}</span>
-                  <span className="text-xs text-muted-foreground">{info.description}</span>
-                </span>
-              </label>
-            );
-          })}
-        </div>
-      </fieldset>
+      <div className="flex max-w-md flex-col gap-2">
+        <Label htmlFor="check-type">Check type</Label>
+        <NativeSelect id="check-type" value={type} onChange={(e) => chooseType(e.target.value as CheckType)}>
+          {CHECK_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {CHECK_TYPE_INFO[t].label}
+            </option>
+          ))}
+        </NativeSelect>
+        <p className="text-sm text-muted-foreground">{CHECK_TYPE_INFO[type].description}</p>
+      </div>
 
       <div className="flex flex-col gap-4">
-        <p className="text-sm font-medium">2. Settings</p>
 
         {isColumnCheck && (
           <div className="flex max-w-md flex-col gap-2">
@@ -231,18 +192,18 @@ export function CheckForm({ action, columns, rowCount }: Props) {
 
         {type === "ROW_COUNT" && (
           <div className="flex flex-col gap-4">
-            <div className="grid max-w-2xl gap-2 sm:grid-cols-2">
+            <div className="flex flex-col gap-2">
               <ModeOption
                 active={rowMode === "relative"}
                 onSelect={() => setRowMode("relative")}
-                title="Compared to recent versions"
-                description="Catches sudden drops or spikes."
+                title="Relative"
+                description="Within a % of the recent average"
               />
               <ModeOption
                 active={rowMode === "absolute"}
                 onSelect={() => setRowMode("absolute")}
-                title="Fixed range"
-                description="Rows must stay between set numbers."
+                title="Fixed"
+                description="Between a min and max"
               />
             </div>
             {rowMode === "relative" ? (
@@ -265,9 +226,7 @@ export function CheckForm({ action, columns, rowCount }: Props) {
                     max={MAX_ROW_COUNT_LOOKBACK}
                   />
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Skipped until the dataset has at least 2 earlier versions to compare with.
-                </p>
+                <p className="text-sm text-muted-foreground">Skipped until there are 2 earlier versions.</p>
               </>
             ) : (
               <div className="grid max-w-md gap-4 sm:grid-cols-2">
@@ -300,19 +259,17 @@ export function CheckForm({ action, columns, rowCount }: Props) {
           <div className="flex flex-col gap-3">
             <ChipInput values={values} onChange={setValues} />
             {suggestions.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                <span>Seen in the latest version:</span>
+              <div className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
+                <span>In the latest file:</span>
                 {suggestions.map((v) => (
                   <Button
                     key={v.value}
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                     size="xs"
                     onClick={() => setValues([...values, v.value])}
                   >
-                    <Plus aria-hidden />
                     {v.value}
-                    <span className="text-muted-foreground">{formatNumber(v.count)}</span>
                   </Button>
                 ))}
                 {suggestions.length > 1 && (
@@ -322,7 +279,7 @@ export function CheckForm({ action, columns, rowCount }: Props) {
                     size="xs"
                     onClick={() => setValues([...values, ...suggestions.map((v) => v.value)])}
                   >
-                    Add all
+                    (add all)
                   </Button>
                 )}
               </div>
@@ -334,9 +291,9 @@ export function CheckForm({ action, columns, rowCount }: Props) {
                 onChange={(e) => setCaseSensitive(e.target.checked)}
                 className="size-4 cursor-pointer accent-primary"
               />
-              Match capitalisation exactly (so &ldquo;cad&rdquo; doesn&apos;t count as &ldquo;CAD&rdquo;)
+              Case-sensitive
             </label>
-            <p className="text-sm text-muted-foreground">Empty cells are ignored. Use a missing values check for those.</p>
+            <p className="text-sm text-muted-foreground">Empty cells are ignored.</p>
           </div>
         )}
 
@@ -351,31 +308,20 @@ export function CheckForm({ action, columns, rowCount }: Props) {
         )}
 
         {type === "UNIQUE" && (
-          <p className="text-sm text-muted-foreground">No settings needed. The check fails if any value appears more than once.</p>
+          <p className="text-sm text-muted-foreground">No settings.</p>
         )}
       </div>
 
-      <div className="flex flex-col gap-3 border-t pt-4">
-        {parsed.success ? (
-          <p className="text-sm">
-            <span className="text-muted-foreground">This check: </span>
-            <span className="font-medium">
-              {isColumnCheck && <code className="rounded bg-muted px-1 py-0.5 text-xs">{column}</code>}{" "}
-              {describeDefinition(parsed.data)}
-            </span>
-          </p>
-        ) : (
-          showErrors && (
-            <ul role="alert" className="list-inside list-disc text-sm text-destructive">
-              {errors.map((error) => (
-                <li key={error}>{error}</li>
-              ))}
-            </ul>
-          )
+      <div className="flex flex-col gap-3">
+        {!parsed.success && showErrors && (
+          <ul role="alert" className="list-inside list-disc text-sm text-destructive">
+            {errors.map((error) => (
+              <li key={error}>{error}</li>
+            ))}
+          </ul>
         )}
         <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={pending}>
-            <Plus aria-hidden />
             {pending ? "Adding…" : "Add check"}
           </Button>
           {state.message && (
@@ -480,15 +426,10 @@ function ModeOption({
   description: string;
 }) {
   return (
-    <label
-      className={cn(
-        "flex cursor-pointer flex-col gap-0.5 rounded-lg border p-3 transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
-        active ? "border-primary bg-primary/5" : "hover:border-ring/60 hover:bg-muted/50",
-      )}
-    >
-      <input type="radio" name="row-count-mode" checked={active} onChange={onSelect} className="sr-only" />
-      <span className="text-sm font-medium">{title}</span>
-      <span className="text-xs text-muted-foreground">{description}</span>
+    <label className="flex cursor-pointer items-center gap-2 text-sm">
+      <input type="radio" name="row-count-mode" checked={active} onChange={onSelect} className="size-4 cursor-pointer accent-primary" />
+      {title}
+      <span className="text-muted-foreground">({description})</span>
     </label>
   );
 }
@@ -528,7 +469,7 @@ function RequiredColumnsFields({
         <>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-muted-foreground">
-              {included} of {rows.length} columns required. The type is checked too, unless set to &ldquo;Any type&rdquo;.
+              {included} of {rows.length} columns required
             </p>
             <div className="flex gap-2">
               <Button type="button" variant="ghost" size="sm" onClick={() => onChange(rows.map((r) => ({ ...r, include: true })))}>
@@ -574,14 +515,12 @@ function RequiredColumnsFields({
         </>
       )}
       {outOfSync && (
-        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed p-3 text-sm">
-          <span className="text-muted-foreground">
-            The latest upload has {fileColumns.length} columns.
-          </span>
+        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          <span>Some columns from the latest upload aren&apos;t listed.</span>
           <Button type="button" variant="outline" size="sm" onClick={() =>
               onChange([...initialRequired(fileColumns), ...rows.filter((r) => !fileColumns.some((c) => c.name === r.name))])
             }>
-            Use columns from the latest upload
+            Load columns
           </Button>
         </div>
       )}
@@ -599,7 +538,6 @@ function RequiredColumnsFields({
           }}
         />
         <Button type="button" variant="outline" disabled={!canAdd} onClick={addColumn}>
-          <Plus aria-hidden />
           Add
         </Button>
       </div>

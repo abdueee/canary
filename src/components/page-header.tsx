@@ -1,4 +1,3 @@
-import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 export type Crumb = { label: string; href?: string };
@@ -25,7 +24,7 @@ export function PageHeader({
           <ol className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
             {crumbs.map((crumb, i) => (
               <li key={`${crumb.label}-${i}`} className="flex min-w-0 items-center gap-1">
-                {i > 0 && <ChevronRight aria-hidden className="size-3.5 shrink-0" />}
+                {i > 0 && <span aria-hidden>/</span>}
                 {crumb.href ? (
                   <Link href={crumb.href} className="truncate rounded-sm hover:text-foreground hover:underline">
                     {crumb.label}

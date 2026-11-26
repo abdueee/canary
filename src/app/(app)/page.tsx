@@ -65,7 +65,6 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
   const counts = Object.fromEntries(
     HEALTH_FILTERS.map((h) => [h, h === "all" ? datasets.length : datasets.filter((d) => d.health === h).length]),
   ) as Record<(typeof HEALTH_FILTERS)[number], number>;
-  const activeAlerts = datasets.reduce((sum, d) => sum + d.activeAlerts, 0);
   const visible = healthFilter === "all" ? datasets : datasets.filter((d) => d.health === healthFilter);
 
   return (
@@ -82,13 +81,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
         )}
       </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <SummaryTile label="Datasets" value={counts.all} />
-        <SummaryTile label="Healthy" value={counts.healthy} tone="text-emerald-700 dark:text-emerald-400" />
-        <SummaryTile label="Failing" value={counts.failing} tone="text-red-700 dark:text-red-400" />
-        <SummaryTile label="Active alerts" value={activeAlerts} href="/alerts" tone={activeAlerts ? "text-red-700 dark:text-red-400" : undefined} />
-      </div>
+      {/* Summary: how many datasets there are, and how many of them are healthy or failing. */}
+      {datasets.length > 0 && <HealthSummary counts={counts} />}
 
       <FilterLinks
         label="Show"
@@ -192,31 +186,75 @@ function Stat({ label, value, emphasis = false }: { label: string; value: string
   );
 }
 
-function SummaryTile({
-  label,
-  value,
-  tone,
-  href,
-}: {
-  label: string;
-  value: number;
-  tone?: string;
-  href?: string;
-}) {
-  const content = (
-    <Card className="h-full">
-      <CardContent>
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className={`text-2xl font-semibold tabular-nums ${tone ?? ""}`}>{value}</p>
-      </CardContent>
-    </Card>
+type Counts = Record<(typeof HEALTH_FILTERS)[number], number>;
+
+// Other states (still being checked, nothing uploaded) only show when they occur.
+const OTHER_STATES: { key: Exclude<Health, "healthy" | "failing">; label: string }[] = [
+  { key: "warning", label: "with warnings" },
+  { key: "checking", label: "being checked" },
+  { key: "none", label: "with no uploads yet" },
+];
+
+function HealthSummary({ counts }: { counts: Counts }) {
+  const total = counts.all;
+  const others = OTHER_STATES.filter((s) => counts[s.key] > 0);
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-3">
+      <Card className="h-full">
+        <CardContent className="flex flex-col gap-1">
+          <p className="text-sm text-muted-foreground">Datasets</p>
+          <p className="text-2xl font-semibold tabular-nums">{total}</p>
+          <p className="text-sm text-muted-foreground">
+            {counts.healthy} healthy · {counts.failing} failing
+            {others.map((s) => ` · ${counts[s.key]} ${s.label}`).join("")}
+          </p>
+        </CardContent>
+      </Card>
+      <HealthTile
+        href="/?health=healthy"
+        label="Healthy"
+        count={counts.healthy}
+        total={total}
+        tone="text-emerald-700 dark:text-emerald-400"
+      />
+      <HealthTile
+        href="/?health=failing"
+        label="Failing"
+        count={counts.failing}
+        total={total}
+        tone="text-red-700 dark:text-red-400"
+      />
+    </div>
   );
-  return href ? (
+}
+
+// Clicking a tile filters the cards below to that state.
+function HealthTile({
+  href,
+  label,
+  count,
+  total,
+  tone,
+}: {
+  href: string;
+  label: string;
+  count: number;
+  total: number;
+  tone: string;
+}) {
+  return (
     <Link href={href} className="rounded-xl focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
-      {content}
+      <Card className="h-full transition-colors hover:bg-muted/40">
+        <CardContent className="flex flex-col gap-1">
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className="tabular-nums">
+            <span className={`text-2xl font-semibold ${tone}`}>{count}</span>
+            <span className="text-sm text-muted-foreground"> of {total}</span>
+          </p>
+        </CardContent>
+      </Card>
     </Link>
-  ) : (
-    content
   );
 }
 

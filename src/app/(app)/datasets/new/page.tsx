@@ -14,7 +14,6 @@ export default async function NewDatasetPage() {
       <PageHeader
         crumbs={[{ label: "Dashboard", href: "/" }, { label: "New dataset" }]}
         title="New dataset"
-        description="A dataset is one recurring file, like a weekly export. Each upload becomes a new version and is checked against the dataset's rules."
       />
       <Card className="max-w-2xl">
         <CardContent>

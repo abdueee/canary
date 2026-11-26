@@ -1,4 +1,3 @@
-import { ListChecks, Pencil } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DatasetForm } from "@/components/dataset-form";
@@ -8,7 +7,7 @@ import { DeleteDatasetButton } from "@/components/delete-dataset-button";
 import { PageHeader } from "@/components/page-header";
 import { HealthBadge, RunStatusBadge } from "@/components/status-badges";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UploadDropzone } from "@/components/upload-dropzone";
 import { requireUser } from "@/lib/authz";
 import { profileSchema } from "@/lib/checks/schemas";
@@ -90,7 +89,6 @@ export default async function DatasetPage({ params, searchParams }: PageProps<"/
           isAdmin &&
           !editing && (
             <Link href={`${datasetHref}?edit=1`} scroll={false} className={buttonVariants({ variant: "outline" })}>
-              <Pencil aria-hidden />
               Edit dataset
             </Link>
           )
@@ -101,7 +99,6 @@ export default async function DatasetPage({ params, searchParams }: PageProps<"/
         <Card>
           <CardHeader>
             <CardTitle>Edit dataset</CardTitle>
-            <CardDescription>Change the name or description shown on the dashboard.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
             <div className="max-w-2xl">
@@ -116,83 +113,52 @@ export default async function DatasetPage({ params, searchParams }: PageProps<"/
                 }
               />
             </div>
-            <div className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-medium">Delete this dataset</p>
-                <p className="text-sm text-muted-foreground">
-                  Removes every version, run, check and alert. This can&apos;t be undone.
-                </p>
-              </div>
+            <div className="flex flex-wrap items-center gap-3 border-t pt-4">
               <DeleteDatasetButton action={deleteDataset.bind(null, dataset.id)} />
+              <span className="text-sm text-muted-foreground">Also deletes all versions, runs, checks and alerts.</span>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Summary tiles */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card size="sm">
-          <CardHeader>
-            <CardDescription>Latest run</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-start gap-2">
+      <dl className="grid gap-4 rounded-lg border p-4 text-sm sm:grid-cols-3">
+        <div>
+          <dt className="text-muted-foreground">Latest run</dt>
+          <dd className="mt-1 flex items-center gap-2">
             {latestRun ? (
               <>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-semibold">v{latestVersion.versionNumber}</span>
-                  <RunStatusBadge status={latestRun.status} />
-                </div>
-                <Link href={runHref(latestRun.id)} className={buttonVariants({ variant: "outline", size: "sm" })}>
-                  See results
+                v{latestVersion.versionNumber} <RunStatusBadge status={latestRun.status} />
+                <Link href={runHref(latestRun.id)} className="underline underline-offset-2 hover:text-foreground">
+                  results
                 </Link>
               </>
             ) : (
-              <p className="text-muted-foreground">No runs yet.</p>
+              "No runs yet"
             )}
-          </CardContent>
-        </Card>
-
-        <Card size="sm">
-          <CardHeader>
-            <CardDescription>Checks</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-start gap-2">
-            <span className="text-lg font-semibold">{checkCount} enabled</span>
-            <Link
-              href={`${datasetHref}/checks`}
-              className={buttonVariants({ variant: checkCount === 0 && isAdmin ? "default" : "outline", size: "sm" })}
-            >
-              <ListChecks aria-hidden />
-              {checkCount === 0 && isAdmin ? "Add checks" : "Manage checks"}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Checks</dt>
+          <dd className="mt-1">
+            {checkCount} enabled ·{" "}
+            <Link href={`${datasetHref}/checks`} className="underline underline-offset-2">
+              {checkCount === 0 && isAdmin ? "add checks" : "manage"}
             </Link>
-          </CardContent>
-        </Card>
+          </dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Versions</dt>
+          <dd className="mt-1" title={latestVersion ? formatDateTime(latestVersion.createdAt) : undefined}>
+            {formatNumber(dataset.versions.length)}
+            {latestVersion && `, last upload ${formatRelative(latestVersion.createdAt)}`}
+          </dd>
+        </div>
+      </dl>
 
-        <Card size="sm">
-          <CardHeader>
-            <CardDescription>Versions</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-1">
-            <span className="text-lg font-semibold">{formatNumber(dataset.versions.length)}</span>
-            <span className="text-muted-foreground" title={latestVersion ? formatDateTime(latestVersion.createdAt) : undefined}>
-              {latestVersion ? `Last upload ${formatRelative(latestVersion.createdAt)}` : "Nothing uploaded yet"}
-            </span>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Upload a new version</CardTitle>
-          <CardDescription>
-            The file is profiled and checked as soon as it&apos;s uploaded.
-            {checkCount === 0 && " This dataset has no enabled checks yet, so every run will pass."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <UploadDropzone datasetId={dataset.id} />
-        </CardContent>
-      </Card>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold">Upload a new version</h2>
+        <UploadDropzone datasetId={dataset.id} />
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Trends</h2>

@@ -1,10 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ResultStatusBadge, RunStatusBadge } from "@/components/status-badges";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { checkTypeLabel } from "@/lib/check-labels";
 import type { RunStatus } from "@/generated/prisma/enums";
 import { FINISHED_RUN_STATUSES, type LiveResult, type RunSnapshot } from "@/lib/run-stream";
@@ -52,10 +51,8 @@ export function LiveRunResults({ runId, initialStatus }: { runId: string; initia
     <Card aria-live="polite">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LoaderCircle aria-hidden className="size-4 animate-spin text-muted-foreground" />
           Checking… <RunStatusBadge status={status} />
         </CardTitle>
-        <CardDescription>Results appear here as each check finishes.</CardDescription>
       </CardHeader>
       <CardContent>
         {results.length === 0 ? (

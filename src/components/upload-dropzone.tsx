@@ -1,6 +1,5 @@
 "use client";
 
-import { FileUp, LoaderCircle, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { cn } from "cn";
@@ -43,7 +42,7 @@ export function UploadDropzone({ datasetId }: { datasetId: string }) {
         setStatus({ kind: "error", message: data?.error ?? `Upload failed (${response.status})` });
         return;
       }
-      setStatus({ kind: "done", message: `Uploaded ${file.name}. Opening the run…` });
+      setStatus({ kind: "done", message: `Uploaded ${file.name}` });
       const { runId } = (await response.json()) as { versionId: string; runId: string };
       router.push(`/datasets/${datasetId}/runs/${runId}`);
     } catch {
@@ -76,25 +75,17 @@ export function UploadDropzone({ datasetId }: { datasetId: string }) {
         }
       }}
       className={cn(
-        "flex flex-col items-center gap-3 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors",
-        dragging ? "border-primary bg-primary/5" : "border-border hover:border-ring/60 hover:bg-muted/40",
+        "flex flex-col items-center gap-3 rounded-lg border border-dashed px-4 py-6 text-center transition-colors",
+        dragging ? "border-primary bg-muted/50" : "border-border",
       )}
     >
-      <div
-        className={cn(
-          "flex size-11 items-center justify-center rounded-full transition-colors",
-          dragging ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-        )}
-      >
-        {uploading ? <LoaderCircle aria-hidden className="size-5 animate-spin" /> : <Upload aria-hidden className="size-5" />}
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <p className="font-medium">
-          {uploading ? `Uploading ${status.fileName}…` : dragging ? "Drop the file to upload" : "Drag a CSV file here"}
-        </p>
-        <p className="text-sm text-muted-foreground">or choose one from your computer · .csv up to {MAX_UPLOAD_LABEL}</p>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        {uploading
+          ? `Uploading ${status.fileName}…`
+          : dragging
+            ? "Drop to upload"
+            : `Drag a CSV here or choose a file (max ${MAX_UPLOAD_LABEL})`}
+      </p>
 
       <input
         ref={inputRef}
@@ -111,12 +102,11 @@ export function UploadDropzone({ datasetId }: { datasetId: string }) {
           }
         }}
       />
-      <Button type="button" size="lg" disabled={uploading} onClick={() => inputRef.current?.click()}>
-        <FileUp aria-hidden />
+      <Button type="button" variant="outline" disabled={uploading} onClick={() => inputRef.current?.click()}>
         {uploading ? "Uploading…" : "Choose file"}
       </Button>
 
-      <p aria-live="polite" className="min-h-5 text-sm">
+      <p aria-live="polite" className="text-sm empty:hidden">
         {status.kind === "error" && <span className="text-destructive">{status.message}</span>}
         {status.kind === "done" && <span className="text-emerald-700 dark:text-emerald-400">{status.message}</span>}
       </p>

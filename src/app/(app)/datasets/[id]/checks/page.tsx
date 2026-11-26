@@ -1,9 +1,7 @@
-import { Trash } from "lucide-react";
 import { notFound } from "next/navigation";
 import { CheckForm } from "@/components/check-form";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader } from "@/components/page-header";
-import { EnabledBadge } from "@/components/status-badges";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireUser } from "@/lib/authz";
@@ -38,7 +36,6 @@ export default async function ChecksPage({ params }: PageProps<"/datasets/[id]/c
   const profile = profileSchema.safeParse(latest?.profile);
   const columns = profile.success ? profile.data.columns : [];
   const rowCount = profile.success ? profile.data.rowCount : null;
-  const enabledCount = dataset.checks.filter((c) => c.enabled).length;
 
   return (
     <>
@@ -49,76 +46,61 @@ export default async function ChecksPage({ params }: PageProps<"/datasets/[id]/c
           { label: "Checks" },
         ]}
         title="Checks"
-        description="Every enabled check runs on each new upload. If any check fails, the run fails and an alert is raised."
+        description="Enabled checks run on every upload. If one fails, the run fails and an alert is opened."
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Current checks</CardTitle>
-          <CardDescription>
-            {dataset.checks.length === 0
-              ? `No checks yet.${isAdmin ? " Add one below." : ""}`
-              : `${enabledCount} of ${dataset.checks.length} enabled.`}
-          </CardDescription>
-        </CardHeader>
-        {dataset.checks.length > 0 && (
-          <CardContent className="flex flex-col gap-3">
-            <ul className="divide-y rounded-lg border">
-              {dataset.checks.map((check) => (
-                <li
-                  key={check.id}
-                  className="flex flex-col gap-3 p-3 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className={check.enabled ? "min-w-0" : "min-w-0 opacity-60"}>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium">{checkTypeLabel(check.type)}</span>
-                      {check.column ? (
-                        <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{check.column}</code>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">whole file</span>
-                      )}
-                      <EnabledBadge enabled={check.enabled} />
-                    </div>
-                    <p className="mt-1 text-sm break-words text-muted-foreground">{describeCheck(check)}</p>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold">Current checks</h2>
+        {dataset.checks.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No checks yet.{isAdmin ? " Add one below." : ""}</p>
+        ) : (
+          <ul className="divide-y rounded-lg border">
+            {dataset.checks.map((check) => (
+              <li
+                key={check.id}
+                className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className={check.enabled ? "min-w-0" : "min-w-0 opacity-60"}>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{checkTypeLabel(check.type)}</span>
+                    {check.column ? (
+                      <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{check.column}</code>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">whole file</span>
+                    )}
+                    {!check.enabled && <span className="text-xs text-muted-foreground">(disabled)</span>}
                   </div>
-                  {isAdmin && (
-                    <div className="flex shrink-0 gap-2">
-                      <form action={setCheckEnabled.bind(null, dataset.id, check.id, !check.enabled)}>
-                        <Button type="submit" variant="outline" size="sm">
-                          {check.enabled ? "Disable" : "Enable"}
-                        </Button>
-                      </form>
-                      <ConfirmSubmitButton
-                        action={deleteCheck.bind(null, dataset.id, check.id)}
-                        confirmMessage="Delete this check? Its results are also removed from past runs. Disable it instead to keep them."
-                        size="sm"
-                      >
-                        <Trash aria-hidden />
-                        Delete
-                      </ConfirmSubmitButton>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-            {isAdmin && (
-              <p className="text-xs text-muted-foreground">
-                Deleting a check also removes its results from past runs. Disable it to keep them.
-              </p>
-            )}
-          </CardContent>
+                  <p className="mt-1 text-sm break-words text-muted-foreground">{describeCheck(check)}</p>
+                </div>
+                {isAdmin && (
+                  <div className="flex shrink-0 gap-2">
+                    <form action={setCheckEnabled.bind(null, dataset.id, check.id, !check.enabled)}>
+                      <Button type="submit" variant="outline" size="sm">
+                        {check.enabled ? "Disable" : "Enable"}
+                      </Button>
+                    </form>
+                    <ConfirmSubmitButton
+                      action={deleteCheck.bind(null, dataset.id, check.id)}
+                      confirmMessage="Delete this check? Its results are also removed from past runs. Disable it instead to keep them."
+                      size="sm"
+                    >
+                      Delete
+                    </ConfirmSubmitButton>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
         )}
-      </Card>
+      </section>
 
       {isAdmin && (
         <Card>
           <CardHeader>
             <CardTitle>Add a check</CardTitle>
-            <CardDescription>
-              {latest && columns.length > 0
-                ? `Columns and hints come from the latest profiled upload (v${latest.versionNumber}).`
-                : "Upload a version first to pick columns from a list. You can still type column names."}
-            </CardDescription>
+            {columns.length === 0 && (
+              <CardDescription>Upload a file first to pick columns from a list.</CardDescription>
+            )}
           </CardHeader>
           <CardContent>
             {/* Keyed by version so the form picks up the new columns after each upload
