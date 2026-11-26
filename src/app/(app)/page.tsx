@@ -189,7 +189,6 @@ type Counts = Record<(typeof HEALTH_FILTERS)[number], number>;
 
 // Other states (still being checked, nothing uploaded) only show when they occur.
 const OTHER_STATES: { key: Exclude<Health, "healthy" | "failing">; label: string }[] = [
-  { key: "warning", label: "with warnings" },
   { key: "checking", label: "being checked" },
   { key: "none", label: "with no uploads yet" },
 ];
