@@ -44,7 +44,7 @@ export async function createDataset(
     data: { ...parsed.data, createdById: user.id },
   });
 
-  revalidatePath("/");
+  revalidatePath("/dashboard");
   redirect(`/datasets/${dataset.id}`);
 }
 
@@ -65,7 +65,7 @@ export async function updateDataset(
     return { message: "Dataset not found" };
   }
 
-  revalidatePath("/");
+  revalidatePath("/dashboard");
   revalidatePath(`/datasets/${id}`);
   return { message: "Saved" };
 }
@@ -84,6 +84,6 @@ export async function deleteDataset(id: string): Promise<void> {
     });
   }
 
-  revalidatePath("/");
-  redirect("/");
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
 }

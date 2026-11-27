@@ -81,7 +81,7 @@ export default async function DatasetPage({ params, searchParams }: PageProps<"/
   return (
     <>
       <PageHeader
-        crumbs={[{ label: "Dashboard", href: "/" }, { label: dataset.name }]}
+        crumbs={[{ label: "Dashboard", href: "/dashboard" }, { label: dataset.name }]}
         title={dataset.name}
         badge={<HealthBadge health={healthFromRun(latestRun?.status)} />}
         description={dataset.description}

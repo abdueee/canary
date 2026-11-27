@@ -10,7 +10,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     // The session and the open alerts are read per request, so they live inside
     // Suspense (required by Cache Components). The fallback is a plain top-bar strip.
-    <Suspense fallback={<div className="h-14 border-b border-zinc-200 bg-white" />}>
+    <Suspense fallback={<div className="h-14 border-b-2 border-primary bg-zinc-900" />}>
       <AuthenticatedShell>{children}</AuthenticatedShell>
     </Suspense>
   );

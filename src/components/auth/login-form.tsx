@@ -51,7 +51,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
+        className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 disabled:opacity-50"
       >
         {pending ? "Signing in..." : "Sign in"}
       </button>
@@ -88,7 +88,7 @@ export function Field({
         autoComplete={autoComplete}
         minLength={minLength}
         required
-        className="rounded-md border border-zinc-300 px-3 py-2 font-normal focus:outline-none focus:ring-2 focus:ring-zinc-400"
+        className="rounded-md border border-zinc-300 px-3 py-2 font-normal focus:outline-none focus:ring-2 focus:ring-ring"
       />
     </label>
   );
