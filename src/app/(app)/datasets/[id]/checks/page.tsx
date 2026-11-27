@@ -41,7 +41,7 @@ export default async function ChecksPage({ params }: PageProps<"/datasets/[id]/c
     <>
       <PageHeader
         crumbs={[
-          { label: "Dashboard", href: "/" },
+          { label: "Dashboard", href: "/dashboard" },
           { label: dataset.name, href: `/datasets/${dataset.id}` },
           { label: "Checks" },
         ]}

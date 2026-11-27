@@ -57,7 +57,7 @@ export default async function RunPage({ params }: PageProps<"/datasets/[id]/runs
     <>
       <PageHeader
         crumbs={[
-          { label: "Dashboard", href: "/" },
+          { label: "Dashboard", href: "/dashboard" },
           { label: version.dataset.name, href: datasetHref },
           { label: `Run for v${version.versionNumber}` },
         ]}

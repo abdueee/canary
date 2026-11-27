@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell } from "lucide-react";
 import { useEffect, useState } from "react";
+import { CanaryLogo } from "@/components/canary-logo";
 import type { CurrentUser } from "@/lib/authz";
 import { SignOutButton } from "./sign-out-button";
 import { useAlertsSeen } from "./use-alerts-seen";
@@ -37,13 +38,14 @@ export function TopBar({
   const newAlerts = seenAt === null || onAlertsPage ? 0 : openAlertTimes.filter((t) => t > seenAt).length;
 
   const navItems: NavItem[] = [
-    { href: "/", label: "Dashboard" },
+    { href: "/dashboard", label: "Dashboard" },
     { href: "/alerts", label: "Alerts" },
     { href: "/admin/users", label: "Users", adminOnly: true },
   ];
   const items = navItems.filter((item) => !item.adminOnly || user.role === "admin");
+  // Dataset pages live under the dashboard, so Dashboard stays highlighted there.
   const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+    href === "/dashboard" ? pathname.startsWith("/dashboard") || pathname.startsWith("/datasets") : pathname.startsWith(href);
 
   const links = items.map((item) => {
     const isAlerts = item.href === "/alerts";
@@ -54,7 +56,7 @@ export function TopBar({
         onClick={() => setMenuOpen(false)}
         aria-current={isActive(item.href) ? "page" : undefined}
         className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-          isActive(item.href) ? "bg-zinc-100 text-zinc-900" : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+          isActive(item.href) ? "bg-primary text-primary-foreground" : "text-zinc-300 hover:bg-white/10 hover:text-white"
         }`}
       >
         {isAlerts && <Bell aria-hidden className="size-4" />}
@@ -73,19 +75,21 @@ export function TopBar({
 
   const userInfo = (
     <div className="flex items-center gap-3">
-      <span className="text-sm text-zinc-700">{user.name}</span>
-      <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium capitalize text-zinc-700">
+      <span className="text-sm text-zinc-200">{user.name}</span>
+      <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium capitalize text-zinc-200">
         {user.role}
       </span>
       <SignOutButton />
     </div>
   );
 
+  // A charcoal bar with a yellow underline, so it stands apart from the page.
   return (
-    <header className="border-b border-zinc-200 bg-white">
+    <header className="border-b-2 border-primary bg-zinc-900 text-white">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-6">
-          <Link href="/" className="text-lg font-semibold">
+          <Link href="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 text-lg font-semibold">
+            <CanaryLogo className="size-7" />
             Canary
           </Link>
           <nav className="hidden items-center gap-1 md:flex">{links}</nav>
@@ -96,7 +100,7 @@ export function TopBar({
         {/* Phones: links and user menu collapse behind a ☰ button. */}
         <button
           type="button"
-          className="relative rounded-md p-2 text-xl md:hidden"
+          className="relative rounded-md p-2 text-xl text-white md:hidden"
           aria-label={newAlerts > 0 ? `Toggle menu (${newAlerts} new alerts)` : "Toggle menu"}
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen((open) => !open)}
@@ -107,7 +111,7 @@ export function TopBar({
       </div>
 
       {menuOpen && (
-        <div className="flex flex-col gap-2 border-t border-zinc-200 px-4 py-3 md:hidden">
+        <div className="flex flex-col gap-2 border-t border-white/10 px-4 py-3 md:hidden">
           <nav className="flex flex-col">{links}</nav>
           {userInfo}
         </div>

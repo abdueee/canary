@@ -23,5 +23,5 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   // Skip API routes (they return 401 themselves), Next internals and static files.
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|icon.svg).*)"],
 };

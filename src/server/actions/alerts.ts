@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireRole } from "@/lib/authz";
 import { db } from "@/lib/db";
+import { notify } from "@/lib/events";
 
 export type AlertActionResult = { error?: string };
 
@@ -29,6 +30,7 @@ export async function acknowledgeAlert(alertId: string): Promise<AlertActionResu
   if (count === 0) return { error: "This alert was already acknowledged or resolved." };
 
   revalidateAlertViews();
+  await announceAlertChange(id.data);
   return {};
 }
 
@@ -52,6 +54,7 @@ export async function resolveAlert(alertId: string): Promise<AlertActionResult> 
   if (result.count === 0) return { error: "This alert was already resolved." };
 
   revalidateAlertViews();
+  await announceAlertChange(id.data);
   return {};
 }
 
@@ -59,4 +62,13 @@ export async function resolveAlert(alertId: string): Promise<AlertActionResult> 
 // the layout too, not just the alerts page.
 function revalidateAlertViews() {
   revalidatePath("/", "layout");
+}
+
+// revalidatePath only refreshes the admin who clicked. This live event makes
+// every other open tab refresh too (see LiveUpdates and lib/events.ts).
+async function announceAlertChange(alertId: string) {
+  const alert = await db.alert.findUnique({ where: { id: alertId }, select: { runId: true, datasetId: true } });
+  if (alert) {
+    await notify("app_events", { type: "alert", runId: alert.runId, datasetId: alert.datasetId });
+  }
 }
